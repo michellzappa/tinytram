@@ -74,8 +74,11 @@ You need Python 3, git and a USB-C cable.
    cp src/secrets.example.h src/secrets.h
    ```
 
-   Open `src/secrets.h` and put in your network name and password. You can add
-   more than one network; the device joins the strongest one it can see.
+   Open `src/secrets.h` and replace `your-ssid` and `your-password` with your
+   network name and password. To add a second network, add a second
+   `{"name", "password"},` line; the device joins the strongest one it can
+   see. The board only sees 2.4 GHz networks, so use the 2.4 GHz name if your
+   router shows two. `secrets.h` is gitignored and never leaves your computer.
 
 4. Plug in the board and flash it:
 
@@ -87,7 +90,11 @@ You need Python 3, git and a USB-C cable.
    back in, and run the command again.
 
 The board shows "joining wi-fi", then the map. Departures appear within half a
-minute.
+minute. If it stays on "joining wi-fi", the name or password is wrong or the
+network is 5 GHz only: fix `secrets.h` and flash again.
+
+You do not need a server. The firmware uses a public instance of the
+positions Worker (see below) out of the box.
 
 ### What setup writes
 
@@ -114,9 +121,25 @@ All of it is open and needs no account or key.
 - The map is OpenStreetMap data, © OpenStreetMap contributors (ODbL), drawn
   once on your computer and stored in the firmware.
 
-The firmware points at a public instance of the Worker. If you fork the
-project or run several devices, deploy your own (`cd worker && pnpm install &&
-pnpm exec wrangler deploy`) and change `POSITIONS_URL` in `src/config.h`.
+### Run your own positions Worker (optional)
+
+The firmware points at a public instance of the Worker. It is free to run your
+own, and worth it if you fork the project or run several devices. You need
+Node.js, [pnpm](https://pnpm.io/) and a free Cloudflare account.
+
+```sh
+cd worker && pnpm install
+pnpm exec wrangler login
+pnpm exec wrangler deploy
+```
+
+`wrangler login` opens a browser to sign in to Cloudflare. `deploy` prints
+the Worker's address, for example
+`https://tinytram-positions.<your-subdomain>.workers.dev`. Put that address
+in `POSITIONS_URL` in `src/config.h` with `http://` instead of `https://` and
+`/v` at the end, then flash again. The device uses plain HTTP to save memory;
+the data is public timetable data. Open the address in a browser to check it:
+the root path answers with one line of text.
 
 Some operators do not publish GPS for every line. Setup checks each line and
 marks those without positions, and the device then estimates them the same
