@@ -20,8 +20,8 @@ colour when its tram is less than a minute out. A metro station is a small
 ring on its line.
 
 The metro has no GPS underground, so the device estimates where each train
-is from its live arrival time and draws it as an outline. Solid means a
-position from the vehicle; outline means an estimate or a timetable time.
+is from its live arrival time and draws it the same way as a tram. A tram
+whose last GPS fix is old turns into an outline.
 
 At the bottom are the next departures per direction, and a status line with a
 coloured dot: green while the data is fresh, amber when it is a few minutes

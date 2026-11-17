@@ -424,7 +424,7 @@ static void drawStation(const Board &b, time_t now, uint32_t ms) {
 // A metro underground reports no position. Each such vehicle is placed on its
 // direction's path from its live arrival time: it is (seconds to arrival) x
 // estMps metres before the platform along the path, and after departure that
-// far past it. Estimated vehicles always draw as outlines.
+// far past it. They draw as solid badges, the same as trams.
 static float *pathCum[NUM_DIRECTIONS];
 static float pathStopS[NUM_DIRECTIONS];
 static bool pathsReady = false;
@@ -501,7 +501,7 @@ static void drawEstimated(const Board &b, double nowF, bool stale) {
       const float hl = sqrtf((x2 - x) * (x2 - x) + (y2 - y) * (y2 - y));
       if (hl > 0.01f) pointer(x, y, 10, (x2 - x) / hl, (y2 - y) / hl, lineColour(d.line));
     }
-    badge(x, y, 10, d.line, false);
+    badge(x, y, 10, d.line, true);
     if (t > 0) minutesLabel(x, y, (int32_t)t);
   }
 }
