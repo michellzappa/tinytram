@@ -108,4 +108,4 @@ same board.
 ## License
 
 MIT. Inter is under the SIL Open Font License, and generated maps carry
-OpenStreetMap data under the ODbL. See `LICENSE` for the details.
+OpenStreetMap data under the ODbL. See `THIRD_PARTY.md` for the details.
