@@ -1,0 +1,11 @@
+.pio/
+.DS_Store
+.venv/
+__pycache__/
+*.bin
+src/secrets.h
+AGENTS.local.md
+work/
+src/stop.h
+src/map_data.h
+.cache/

@@ -1,0 +1,87 @@
+{
+  "name": "Vijzelgracht",
+  "operator": "GVB",
+  "aliases": {
+    "Osdorp De Aker": "Osdorp"
+  },
+  "lines": {
+    "52": {
+      "plan": "52",
+      "type": "METRO",
+      "colour": "#2EC4B0"
+    },
+    "1": {
+      "plan": "1",
+      "type": "TRAM",
+      "colour": "#9B6BE0"
+    },
+    "7": {
+      "plan": "7",
+      "type": "TRAM",
+      "colour": "#F0B03C"
+    },
+    "19": {
+      "plan": "19",
+      "type": "TRAM",
+      "colour": "#3CA8F0"
+    }
+  },
+  "directions": [
+    {
+      "tpc": "30009580",
+      "label": "Noord",
+      "arrow": "↑",
+      "lines": [
+        "52"
+      ],
+      "type": "METRO",
+      "dests": [
+        "Noord"
+      ]
+    },
+    {
+      "tpc": "30009579",
+      "label": "Zuid",
+      "arrow": "↓",
+      "lines": [
+        "52"
+      ],
+      "type": "METRO",
+      "dests": [
+        "Zuid"
+      ]
+    },
+    {
+      "tpc": "30008072",
+      "label": "Leidseplein",
+      "arrow": "←",
+      "lines": [
+        "1",
+        "19",
+        "7"
+      ],
+      "type": "TRAM",
+      "dests": [
+        "Osdorp De Aker",
+        "Slotermeer",
+        "Station Sloterdijk"
+      ]
+    },
+    {
+      "tpc": "30008073",
+      "label": "Weesperplein",
+      "arrow": "→",
+      "lines": [
+        "1",
+        "19",
+        "7"
+      ],
+      "type": "TRAM",
+      "dests": [
+        "Azartplein",
+        "Flevopark",
+        "Muiderpoortstation"
+      ]
+    }
+  ]
+}

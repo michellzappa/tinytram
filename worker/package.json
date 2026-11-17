@@ -1,0 +1,15 @@
+{
+  "name": "tinytram-positions",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261116.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.163.0"
+  }
+}
