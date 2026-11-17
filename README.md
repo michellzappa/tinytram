@@ -1,9 +1,13 @@
 # tinytram
 
-The trams, buses and metros leaving one Dutch stop, on a small round screen by
-the door. It runs on the [Waveshare ESP32-S3-Touch-AMOLED-1.75](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
-(466x466) over Wi-Fi, and it was built for Vijzelgracht in Amsterdam: tram 1,
-7 and 19 on the street and metro 52 underneath.
+Amsterdam's trams and metro, live on a small round screen by the door. It
+draws the city around your stop as a dark map, puts every tram on it where it
+is right now, and lists the next departures each way underneath. It runs on
+the [Waveshare ESP32-S3-Touch-AMOLED-1.75](https://docs.waveshare.com/ESP32-S3-Touch-AMOLED-1.75)
+(466x466) over Wi-Fi.
+
+Pick any stop in Amsterdam with one setup command. The example in this repo is
+Vijzelgracht, with tram 1, 7 and 19 on the street and metro 52 underneath.
 
 ## What it shows
 
@@ -38,40 +42,61 @@ It is meant to stay on. The face shifts by a few pixels every two minutes so
 the AMOLED does not burn in, and it dims between 23:00 and 07:00 until you
 touch it.
 
-## Set it up for your stop
+## Set it up
 
-Any stop in the Netherlands should work. Amsterdam is the only one tested so
-far; other places are open as issues.
+Any stop in Amsterdam works. Other Dutch cities use the same data and should
+work too, but nobody has tested them yet; see the open issues.
 
-You need Python 3 and [PlatformIO](https://platformio.org/).
+You need Python 3, git and a USB-C cable.
 
-```sh
-python3 -m venv .venv && .venv/bin/pip install pillow
-.venv/bin/python scripts/setup.py --address "Vijzelgracht, Amsterdam" --lines 1,7,19,52
-```
+1. Get the code and the tools:
 
-`setup.py` finds the platforms near the address, asks OVapi which lines and
-destinations use them, checks which of those lines report GPS, and downloads
-the streets, water and route shapes around the stop from OpenStreetMap. It
-prints what it found, then writes:
+   ```sh
+   git clone https://github.com/michellzappa/tinytram && cd tinytram
+   python3 -m venv .venv && .venv/bin/pip install pillow platformio
+   ```
 
-- `stops/<stop>.json`, your choices. Edit a label, a colour or a line here and
-  run `setup.py --config stops/<stop>.json` again.
-- `src/stop.h` and `src/map_data.h`, generated for the firmware.
+2. Choose your stop. Give an address near it:
 
-Leave out `--lines` to keep every line at the stop. `--stop` picks a stop by
-name when several are near the address, and `--label 30008072=Leidseplein`
-renames a direction. `stops/vijzelgracht.json` is a working example.
+   ```sh
+   .venv/bin/python scripts/setup.py --address "Museumplein, Amsterdam"
+   ```
 
-Then add your Wi-Fi and flash:
+   The script takes the stop nearest the address, prints its lines and
+   directions, and names the other stops close by. To use one of those, run it
+   again with `--stop "<name>"`. Add `--lines 2,12` to keep only some lines;
+   without it, setup keeps every line. To try the example first, run
+   `.venv/bin/python scripts/setup.py --config stops/vijzelgracht.json`.
 
-```sh
-cp src/secrets.example.h src/secrets.h
-pio run -e amoled-175-round -t upload
-```
+3. Add your Wi-Fi:
 
-`secrets.h` takes more than one network; the device joins the strongest one it
-can see.
+   ```sh
+   cp src/secrets.example.h src/secrets.h
+   ```
+
+   Open `src/secrets.h` and put in your network name and password. You can add
+   more than one network; the device joins the strongest one it can see.
+
+4. Plug in the board and flash it:
+
+   ```sh
+   .venv/bin/pio run -e amoled-175-round -t upload
+   ```
+
+   If the upload cannot connect, unplug the board, hold BOOT while you plug it
+   back in, and run the command again.
+
+The board shows "joining wi-fi", then the map. Departures appear within half a
+minute.
+
+### What setup writes
+
+- `stops/<stop>.json` holds your choices. Edit a label, a colour or a line
+  there, then run `setup.py --config stops/<stop>.json` again.
+- `src/stop.h` and `src/map_data.h` are generated for the firmware. The build
+  stops with a clear error until they exist.
+- `--label 30008072=Leidseplein` renames a direction. The number is the
+  platform code that setup prints.
 
 ## Where the data comes from
 
