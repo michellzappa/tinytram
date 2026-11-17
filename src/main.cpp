@@ -70,6 +70,11 @@ void loop() {
     Serial.println("tap: refresh");
     netRefreshNow();
   }
+  // Hold BOOT: Wi-Fi setup (hold again to leave it).
+  if (in.aLong) {
+    Serial.println("boot held: wi-fi setup");
+    netToggleSetup();
+  }
   if (in.aPressed) {
     if (faceTableMode()) faceToggleTable();   // BOOT in table mode goes back to the map
     else faceToggleZoom();
@@ -85,7 +90,7 @@ void loop() {
   static uint32_t lastFrame = 0;
   static uint32_t wakeUntil = 0;
   const uint32_t ms = millis();
-  if (in.touchBegan || in.aPressed || in.bPressed) wakeUntil = ms + 15000;
+  if (in.touchBegan || in.aPressed || in.aLong || in.bPressed) wakeUntil = ms + 15000;
   if (ms - lastFrame < FRAME_MS) {
     delay(5);
     return;

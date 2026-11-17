@@ -35,7 +35,8 @@ grey once the data is too old to trust.
 
 Press PWR for table mode: the same departures as plain rows on black, with
 destinations and minutes in straight columns. BOOT switches the map between
-700 m and 1.2 km to the edge. A tap on the glass fetches now. The device
+700 m and 1.2 km to the edge; hold BOOT for Wi-Fi setup. A tap on the glass
+fetches now. The device
 remembers the mode and zoom.
 
 It is meant to stay on. The face shifts by a few pixels every two minutes so
@@ -68,19 +69,7 @@ You need Python 3, git and a USB-C cable.
    without it, setup keeps every line. To try the example first, run
    `.venv/bin/python scripts/setup.py --config stops/vijzelgracht.json`.
 
-3. Add your Wi-Fi:
-
-   ```sh
-   cp src/secrets.example.h src/secrets.h
-   ```
-
-   Open `src/secrets.h` and replace `your-ssid` and `your-password` with your
-   network name and password. To add a second network, add a second
-   `{"name", "password"},` line; the device joins the strongest one it can
-   see. The board only sees 2.4 GHz networks, so use the 2.4 GHz name if your
-   router shows two. `secrets.h` is gitignored and never leaves your computer.
-
-4. Plug in the board and flash it:
+3. Plug in the board and flash it:
 
    ```sh
    .venv/bin/pio run -e amoled-175-round -t upload
@@ -89,9 +78,26 @@ You need Python 3, git and a USB-C cable.
    If the upload cannot connect, unplug the board, hold BOOT while you plug it
    back in, and run the command again.
 
-The board shows "joining wi-fi", then the map. Departures appear within half a
-minute. If it stays on "joining wi-fi", the name or password is wrong or the
-network is 5 GHz only: fix `secrets.h` and flash again.
+4. Set up Wi-Fi from your phone. On first start the board shows "Wi-Fi
+   setup", a hotspot name like `tinytram-55AC` and an 8-digit password. Join
+   that hotspot on your phone. A page opens; if it does not, open
+   `192.168.4.1` in a browser. Choose your network, type its password and tap
+   Join. The board joins it, remembers it, and shows the map. Departures
+   appear within half a minute.
+
+   The board only sees 2.4 GHz networks. If your router shows two names, pick
+   the 2.4 GHz one.
+
+To change networks later, for example after a move, hold BOOT for a second.
+The setup screen opens; hold BOOT again to leave it. The board remembers up
+to four networks and joins whichever one is in range. If it cannot join any
+of them for a minute after it starts, it opens setup by itself, and goes back
+to trying its saved networks after five minutes (a router that comes back
+slowly after a power cut).
+
+You can also build Wi-Fi in: copy `src/secrets.example.h` to `src/secrets.h`
+and fill it in before you flash. `secrets.h` is gitignored. This suits a board
+you set up for someone else's network.
 
 You do not need a server. The firmware uses a public instance of the
 positions Worker (see below) out of the box.

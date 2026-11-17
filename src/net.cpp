@@ -14,11 +14,14 @@
 
 #include "config.h"
 #include "departures.h"
+#include "provision.h"
 
+// Optional: networks known at build time. Setup on the device adds more.
 #if __has_include("secrets.h")
 #include "secrets.h"
+#define HAS_SECRETS 1
 #else
-#error "Copy src/secrets.example.h to src/secrets.h and add your Wi-Fi"
+#define HAS_SECRETS 0
 #endif
 
 // ArduinoJson allocator that puts the document in PSRAM.
@@ -33,8 +36,10 @@ static PsramAllocator psramAllocator;
 
 static Board board;
 static SemaphoreHandle_t lock;
-static WiFiMulti wifiMulti;
+static WiFiMulti *wifiMulti = nullptr;
+static uint8_t knownCount = 0;
 static volatile bool refreshAsked = false;
+static volatile bool setupToggle = false;
 static bool everConnected = false;
 
 void netSnapshot(Board *out) {
@@ -44,6 +49,7 @@ void netSnapshot(Board *out) {
 }
 
 void netRefreshNow() { refreshAsked = true; }
+void netToggleSetup() { setupToggle = true; }
 
 static void setState(NetState s, const char *err = nullptr) {
   xSemaphoreTake(lock, portMAX_DELAY);
@@ -253,17 +259,116 @@ static void setFetching(bool f) {
   xSemaphoreGive(lock);
 }
 
+// Every network the device knows: saved on the device first, then secrets.h.
+static void loadNetworks() {
+  delete wifiMulti;
+  wifiMulti = new WiFiMulti();
+  knownCount = 0;
+  SavedNet saved[MAX_SAVED];
+  const uint8_t n = provLoad(saved, MAX_SAVED);
+  for (uint8_t i = 0; i < n; i++, knownCount++)
+    wifiMulti->addAP(saved[i].ssid, saved[i].pass);
+#if HAS_SECRETS
+  for (const auto &c : WIFI_NETWORKS)
+    if (c.ssid && c.ssid[0] && strcmp(c.ssid, "your-ssid") != 0) {
+      wifiMulti->addAP(c.ssid, c.pass);
+      knownCount++;
+    }
+#endif
+  Serial.printf("wifi: %u known networks\n", knownCount);
+}
+
+static void setSetup(const char *ap, const char *pass, const char *note) {
+  xSemaphoreTake(lock, portMAX_DELAY);
+  board.state = NET_SETUP;
+  strlcpy(board.setupAp, ap, sizeof(board.setupAp));
+  strlcpy(board.setupPass, pass, sizeof(board.setupPass));
+  strlcpy(board.setupNote, note, sizeof(board.setupNote));
+  xSemaphoreGive(lock);
+}
+
+// Setup mode: the device opens a hotspot "tinytram-XXXX" with a random
+// 8-digit password, both shown on the screen. A phone that joins it gets the
+// setup page. The mode ends when the device has joined a network, when BOOT
+// is held again, or after SETUP_TIMEOUT_MS when it already knows networks
+// (a router that came back late after a power cut).
+static const uint32_t SETUP_TIMEOUT_MS = 5 * 60 * 1000;
+
+static void runSetup(const char *why) {
+  setupToggle = false;
+  WiFi.disconnect();
+  WiFi.mode(WIFI_AP_STA);
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  char ap[24], pass[12];
+  snprintf(ap, sizeof(ap), "tinytram-%02X%02X", mac[4], mac[5]);
+  snprintf(pass, sizeof(pass), "%08lu", (unsigned long)(esp_random() % 100000000UL));
+  provStart(ap, pass);
+  provSetNote(why);
+  setSetup(ap, pass, why);
+  Serial.printf("setup: hotspot %s open\n", ap);
+
+  uint32_t until = millis() + SETUP_TIMEOUT_MS;
+  for (;;) {
+    SavedNet n;
+    if (provLoop(&n)) {
+      char msg[48];
+      snprintf(msg, sizeof(msg), "Joining %s", n.ssid);
+      setSetup(ap, pass, msg);
+      WiFi.begin(n.ssid, n.pass);
+      const uint32_t t0 = millis();
+      while (WiFi.status() != WL_CONNECTED && millis() - t0 < 20000) {
+        SavedNet ignored;   // keep the page answering; a second submit waits
+        provLoop(&ignored);
+        vTaskDelay(pdMS_TO_TICKS(20));
+      }
+      if (WiFi.status() == WL_CONNECTED) {
+        provSave(n);
+        Serial.printf("setup: joined %s, saved\n", n.ssid);
+        break;
+      }
+      WiFi.disconnect();
+      snprintf(msg, sizeof(msg), "Could not join %s", n.ssid);
+      provSetNote("Could not join that network. Check the name and password.");
+      setSetup(ap, pass, msg);
+      until = millis() + SETUP_TIMEOUT_MS;
+    }
+    if (setupToggle) { setupToggle = false; break; }
+    if (knownCount && (int32_t)(millis() - until) >= 0) break;
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+  provStop();
+  WiFi.mode(WIFI_STA);
+  loadNetworks();
+  setState(WiFi.status() == WL_CONNECTED ? NET_NO_TIME
+                                         : (everConnected ? NET_OFFLINE : NET_CONNECTING));
+}
+
+// Without a network for this long after boot, setup opens by itself.
+static const uint32_t JOIN_GRACE_MS = 60 * 1000;
+
 static void netTask(void *) {
   WiFi.mode(WIFI_STA);
   WiFi.setHostname("tinytram");
-  for (const auto &c : WIFI_NETWORKS) wifiMulti.addAP(c.ssid, c.pass);
+  loadNetworks();
   configTzTime(TZ_INFO, "pool.ntp.org", "time.google.com");
+  uint32_t joinSince = millis();
 
   uint32_t nextFetch = 0;
   uint32_t nextPositions = 0;
   for (;;) {
-    if (wifiMulti.run(8000) != WL_CONNECTED) {
+    if (setupToggle || !knownCount) {
+      runSetup(knownCount ? "" : "No Wi-Fi saved yet");
+      joinSince = millis();
+      continue;
+    }
+    if (WiFi.status() != WL_CONNECTED && wifiMulti->run(8000) != WL_CONNECTED) {
       setState(everConnected ? NET_OFFLINE : NET_CONNECTING);
+      if (!everConnected && millis() - joinSince > JOIN_GRACE_MS) {
+        runSetup("Could not join a saved network");
+        joinSince = millis();
+        continue;
+      }
       vTaskDelay(pdMS_TO_TICKS(2000));
       continue;
     }

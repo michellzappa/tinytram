@@ -1,4 +1,5 @@
-// Copy to secrets.h (gitignored) and fill in. Several networks are fine: the
+// Optional. Wi-Fi is normally set up on the device (hold BOOT). To build
+// networks in, copy to secrets.h (gitignored) and fill in. Several are fine: the
 // device joins the strongest one it can see.
 #pragma once
 

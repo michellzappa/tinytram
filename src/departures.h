@@ -33,6 +33,7 @@ enum NetState : uint8_t {
   NET_OK,              // last fetch worked
   NET_FETCH_FAILED,    // Wi-Fi up, last fetch failed
   NET_OFFLINE,         // Wi-Fi lost after having been up
+  NET_SETUP,           // own hotspot open for Wi-Fi setup
 };
 
 struct Board {
@@ -49,6 +50,10 @@ struct Board {
   int8_t rssi = 0;            // dBm, 0 = unknown
   bool fetching = false;
   char lastError[32] = "";
+  // Wi-Fi setup: the hotspot to join, its password, and the last problem.
+  char setupAp[24] = "";
+  char setupPass[12] = "";
+  char setupNote[48] = "";
 };
 
 // Starts the network task. It owns Wi-Fi, NTP and the fetch loop.
@@ -57,3 +62,5 @@ void netBegin();
 void netSnapshot(Board *out);
 // Asks for a fetch now (a tap on the glass).
 void netRefreshNow();
+// Opens Wi-Fi setup, or closes it when it is open (BOOT held).
+void netToggleSetup();

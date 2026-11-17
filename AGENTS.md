@@ -39,7 +39,7 @@ touch, AXP2101). Desk-specific notes, if any, are in `AGENTS.local.md`
 
     python3 -m venv .venv && .venv/bin/pip install pillow
     .venv/bin/python scripts/setup.py --config stops/vijzelgracht.json
-    cp src/secrets.example.h src/secrets.h      # add Wi-Fi
+    cp src/secrets.example.h src/secrets.h      # optional: Wi-Fi built in
     pio run -e amoled-175-round -t upload
 
 Read the board's MAC before flashing if several identical boards are around:
@@ -54,5 +54,6 @@ dark bands -> text. Table mode skips the map and vehicles.
 
 ## Controls
 
-Tap: fetch now. BOOT: map zoom (in table mode, back to the map). PWR: map or
+Tap: fetch now. BOOT: map zoom (in table mode, back to the map). BOOT held:
+Wi-Fi setup hotspot (provision.cpp, networks in NVS "wifi"). PWR: map or
 table. Mode and zoom persist in NVS (`tinytram`).

@@ -796,7 +796,23 @@ void faceSetShift(int16_t dx, int16_t dy) {
   oy = dy;
 }
 
+// Wi-Fi setup: what to join on a phone, on black.
+static void drawSetup(const Board &b) {
+  gfx->clear(C_BG);
+  const int16_t cx = (int16_t)(CX + ox);
+  txtCenter(inter_label, "WI-FI SETUP", cx, (int16_t)(96 + oy), C_SOFT, 2);
+  txtCenter(inter_unit, "On your phone, join", cx, (int16_t)(150 + oy), C_SOFT);
+  txtCenter(inter_dest, b.setupAp, cx, (int16_t)(184 + oy), C_TEXT);
+  txtCenter(inter_unit, "password", cx, (int16_t)(228 + oy), C_SOFT);
+  txtCenter(inter_big, b.setupPass, cx, (int16_t)(284 + oy), C_TEXT);
+  txtCenter(inter_unit, "A page opens to choose your Wi-Fi.", cx, (int16_t)(328 + oy), C_SOFT);
+  txtCenter(inter_unit, "If not, open 192.168.4.1", cx, (int16_t)(352 + oy), C_DIM);
+  if (b.setupNote[0])
+    txtCenter(inter_unit, b.setupNote, cx, (int16_t)(392 + oy), C_AGE);
+}
+
 void faceDraw(const Board &b, double nowF, uint32_t ms) {
+  if (b.state == NET_SETUP) { drawSetup(b); return; }
   const time_t now = (time_t)nowF;
   const bool clockOk = now > 1700000000;
   const uint32_t age = (b.fetchedAt && clockOk && now > b.fetchedAt)
@@ -836,8 +852,11 @@ void faceDraw(const Board &b, double nowF, uint32_t ms) {
                       : b.state == NET_NO_TIME  ? "Setting clock"
                       : b.fetchedAt             ? "No data"
                                                 : "Loading trams";
-    txtCenter(inter_dest, msg, (int16_t)(CX + ox),
-              (int16_t)((tableMode ? CY + 6 : CY + 128) + oy), C_SOFT);
+    const int16_t y = (int16_t)((tableMode ? CY + 6 : CY + 128) + oy);
+    txtCenter(inter_dest, msg, (int16_t)(CX + ox), y, C_SOFT);
+    if (b.state == NET_CONNECTING)
+      txtCenter(inter_unit, "Hold BOOT to set up Wi-Fi", (int16_t)(CX + ox),
+                (int16_t)(y + 26), C_DIM);
   } else if (tableMode) {
     drawTable(b, now, stale);
   } else {
